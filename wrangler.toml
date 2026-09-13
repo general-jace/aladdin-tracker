@@ -13,14 +13,14 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "aladdin-tracker-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "3fe6d1ec-a9b5-47b9-a4ad-c27b16f31741"
 
 # ---- KV namespace (short-lived cache / rate-limit buffer) ----
 # Create first with: wrangler kv namespace create PRICE_KV
 # Then paste the returned id below.
 [[kv_namespaces]]
 binding = "PRICE_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "81c58d2418154c90bf1f1b670e773dc7"
 
 # ---- Scheduled price refresh ----
 # 22:00 UTC, Mon-Fri = shortly after US market close. Adjust to taste.
