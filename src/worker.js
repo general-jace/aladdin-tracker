@@ -90,15 +90,34 @@ async function fetchLatestConcept(env, conceptNames) {
     if (!res.ok) throw new Error(`EDGAR HTTP ${res.status} for ${concept}`);
     const data = await res.json();
     const units = data.units?.USD || data.units?.["USD/shares"] || [];
-    const tenQOrK = units.filter((u) => u.form === "10-Q" || u.form === "10-K");
-    const pool = tenQOrK.length ? tenQOrK : units;
-    if (!pool.length) continue;
-    pool.sort((a, b) => new Date(b.end) - new Date(a.end));
-    const latest = pool[0];
+
+    // The same fiscal year gets re-reported multiple times (the original 10-K,
+    // then again as a comparative figure in later 10-Ks/10-Qs), and some
+    // quarterly footnote tables can share an "end" date with the full year.
+    // Only trust entries explicitly marked as a full annual 10-K figure.
+    let annual = units.filter((u) => u.form === "10-K" && u.fp === "FY");
+    if (!annual.length) {
+      // Fallback: anything spanning a genuinely ~year-long period.
+      annual = units.filter((u) => {
+        const days = (new Date(u.end) - new Date(u.start)) / 86400000;
+        return days > 350;
+      });
+    }
+    if (!annual.length) continue;
+
+    // A given fiscal year can still appear more than once (restatements) —
+    // keep only the most recently FILED value for each distinct period end.
+    const latestByEnd = new Map();
+    for (const u of annual) {
+      const existing = latestByEnd.get(u.end);
+      if (!existing || new Date(u.filed) > new Date(existing.filed)) latestByEnd.set(u.end, u);
+    }
+    const latest = [...latestByEnd.values()].sort((a, b) => new Date(b.end) - new Date(a.end))[0];
     return {
       concept,
       value: latest.val,
       fiscalPeriod: `${latest.fy}${latest.fp}`,
+      periodStart: latest.start,
       periodEnd: latest.end,
       form: latest.form,
       filed: latest.filed,
@@ -113,12 +132,16 @@ async function fetchBlackRockFootprint(env) {
     fetchLatestConcept(env, EDGAR_CONCEPTS.netIncome),
     fetchLatestConcept(env, EDGAR_CONCEPTS.epsDiluted),
   ]);
+  const ends = [revenue?.periodEnd, netIncome?.periodEnd, epsDiluted?.periodEnd].filter(Boolean);
+  const periodsMatch = new Set(ends).size <= 1;
   return {
     source: "SEC EDGAR XBRL companyconcept API (data.sec.gov), CIK " + BLACKROCK_CIK,
     fetchedAt: nowIso(),
     revenue,
     netIncome,
     epsDiluted,
+    periodsMatch,
+    warning: periodsMatch ? null : "Revenue, Net Income, and EPS came from DIFFERENT fiscal periods (see each field's period-end) — do not treat them as one consistent snapshot. Check each individually before saving.",
     note: "AUM, net inflows, and retention/stickiness commentary are not in XBRL financial-statement tags and must still be entered manually from the earnings release or 10-Q/10-K narrative.",
   };
 }

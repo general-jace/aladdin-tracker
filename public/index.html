@@ -902,12 +902,25 @@ async function autoFillFromEdgar() {
     if (data.revenue) document.getElementById('fpTechRev').value = (data.revenue.value / 1e9).toFixed(2);
     if (data.netIncome) document.getElementById('fpNetIncome').value = (data.netIncome.value / 1e9).toFixed(2);
     if (data.epsDiluted) document.getElementById('fpEpsDiluted').value = data.epsDiluted.value;
-    const periodEnd = data.revenue?.periodEnd || data.netIncome?.periodEnd;
-    if (periodEnd && !document.getElementById('fpDate').value) document.getElementById('fpDate').value = periodEnd;
-    const cite = `${data.source} — revenue ${data.revenue?.form || ''} filed ${data.revenue?.filed || ''}, period end ${periodEnd || ''}`;
+
+    const periods = [
+      ['Revenue', data.revenue?.periodEnd],
+      ['Net Income', data.netIncome?.periodEnd],
+      ['Diluted EPS', data.epsDiluted?.periodEnd]
+    ].filter(p => p[1]);
+    const periodSummary = periods.map(p => `${p[0]}: ${p[1]}`).join(' | ');
+
+    const anchorPeriod = data.revenue?.periodEnd || data.netIncome?.periodEnd || data.epsDiluted?.periodEnd;
+    if (anchorPeriod && !document.getElementById('fpDate').value) document.getElementById('fpDate').value = anchorPeriod;
+    const cite = `${data.source} — ${periodSummary}`;
     const srcEl = document.getElementById('fpSource');
     if (!srcEl.value) srcEl.value = cite;
-    status.textContent = 'Filled from EDGAR. AUM/inflows/retention still need manual entry.';
+
+    if (data.warning) {
+      status.innerHTML = `<strong style="color:var(--red)">⚠ MISMATCH — check before saving:</strong> ${data.warning} (${periodSummary})`;
+    } else {
+      status.textContent = `Filled from EDGAR, all for the same period (${periodSummary}). AUM/inflows/retention still need manual entry.`;
+    }
   } catch (e) {
     status.textContent = 'EDGAR fetch failed: ' + e.message;
   }
