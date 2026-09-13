@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aladdin-Style Portfolio Tracker + Institutional Footprint Monitor</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --card: #1a2332;
+    --border: #2d3a4f;
+    --text: #e7ecf3;
+    --muted: #8b9bb4;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header h1 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .header h1 span { color: var(--accent); }
+  .badge {
+    background: var(--accent);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .tab {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card h3 {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin: 1rem 0 0.5rem;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea { min-height: 100px; resize: vertical; }
+  textarea.mono { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.8rem; }
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #2563eb; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; align-items: center; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; }
+  .metric {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .metric .value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0.25rem 0;
+  }
+  .metric .label { font-size: 0.75rem; color: var(--muted); }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+  .neutral { color: var(--yellow); }
+  .report {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    white-space: pre-wrap;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .section-title {
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .holdings-table input { width: 100%; padding: 0.4rem; }
+  .remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+  .status-bar {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+  .info-box {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+  .warn-box {
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.35);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    color: #f3d78a;
+  }
+  .footprint-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .footprint-item:last-child { border-bottom: none; }
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-left: 0.4rem;
+  }
+  .tag.computed { border-color: rgba(34,197,94,0.5); color: var(--green); }
+  .tag.gap { border-color: rgba(239,68,68,0.5); color: var(--red); }
+  .spinner {
+    display: inline-block;
+    width: 0.9rem; height: 0.9rem;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1><span>&#9670;</span> Aladdin-Style Tracker <span class="badge">v2.0</span></h1>
+    <div style="font-size:0.85rem;color:var(--muted)">Personal Portfolio + Institutional Footprint Monitor</div>
+  </div>
+
+  <div class="container">
+    <div class="warn-box">
+      <strong>What this tool can and can't do:</strong> Asset-class weights, drift, concentration, and adherence math below are exact given what you enter. Sharpe, Sortino, volatility, max drawdown, beta, and capture ratios are only computed &mdash; and are only as accurate &mdash; if you have a real periodic return series in the "Returns Data" tab; otherwise the report says so instead of guessing. Holdings prices can be refreshed live from Stooq (free EOD data). BlackRock revenue/net income/EPS can be auto-filled from SEC EDGAR's structured XBRL data. AUM, net inflows, and retention commentary are <em>not</em> published as structured data anywhere free or paid at reasonable cost &mdash; those stay manual entry with a required source + date. This is analysis of the data you provide, not financial advice.
+    </div>
+    <div class="info-box" id="authStatus">Checking connection to your API...</div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="setup">1. Setup &amp; Holdings</button>
+      <button class="tab" data-tab="targets">2. Targets &amp; Rules</button>
+      <button class="tab" data-tab="returns">3. Returns Data</button>
+      <button class="tab" data-tab="review">4. Full Review</button>
+      <button class="tab" data-tab="footprints">5. Footprints</button>
+      <button class="tab" data-tab="history">6. History &amp; Export</button>
+    </div>
+
+    <!-- SETUP PANEL -->
+    <div id="setup" class="panel active">
+      <div class="card">
+        <h2>Portfolio Holdings</h2>
+        <div class="info-box">
+          Enter your current holdings. Weights are used for allocation, drift, and concentration math &mdash; if you enter shares + price instead, click "Recalculate Weights."
+        </div>
+        <table class="holdings-table">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Shares / Amount</th>
+              <th>Price</th>
+              <th>Weight %</th>
+              <th>Asset Class</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="holdingsBody"></tbody>
+        </table>
+        <div class="btn-group">
+          <button class="btn" onclick="addHoldingRow()">+ Add Holding</button>
+          <button class="btn btn-secondary" onclick="recalcWeights()">Recalculate Weights from Shares &times; Price</button>
+          <button class="btn btn-secondary" onclick="loadSampleHoldings()">Load Sample</button>
+          <button class="btn btn-secondary" onclick="clearHoldings()">Clear All</button>
+          <button class="btn" id="refreshPricesBtn" onclick="refreshLivePrices()">&#8635; Refresh Live Prices (Stooq, EOD)</button>
+        </div>
+        <div class="status-bar" id="holdingsStatus">0 holdings &bull; Total weight: 0%</div>
+        <div class="status-bar" id="priceRefreshStatus"></div>
+      </div>
+
+      <div class="card">
+        <h2>Quick Portfolio Value</h2>
+        <div class="grid-3">
+          <div>
+            <label>Total Portfolio Value ($)</label>
+            <input type="number" id="totalValue" placeholder="e.g. 250000" onchange="recalcWeights()">
+          </div>
+          <div>
+            <label>As-of Date</label>
+            <input type="date" id="asOfDate">
+          </div>
+          <div>
+            <label>Base Currency</label>
+            <select id="currency">
+              <option>USD</option>
+              <option>EUR</option>
+              <option>GBP</option>
+              <option>AUD</option>
+              <option>CAD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARGETS PANEL -->
+    <div id="targets" class="panel">
+      <div class="card">
+        <h2>Strategic Target Allocation</h2>
+        <div class="grid-2">
+          <div>
+            <label>Equities Target %</label>
+            <input type="number" id="targetEquity" value="60" step="1">
+          </div>
+          <div>
+            <label>Fixed Income Target %</label>
+            <input type="number" id="targetFI" value="30" step="1">
+          </div>
+          <div>
+            <label>Alternatives / Real Assets %</label>
+            <input type="number" id="targetAlt" value="5" step="1">
+          </div>
+          <div>
+            <label>Cash / Liquidity %</label>
+            <input type="number" id="targetCash" value="5" step="1">
+          </div>
+        </div>
+        <h3>Risk Tolerance Bands</h3>
+        <div class="grid-2">
+          <div>
+            <label>Max Drift Before Rebalance (%)</label>
+            <input type="number" id="driftBand" value="5" step="0.5">
+          </div>
+          <div>
+            <label>Max Single Position %</label>
+            <input type="number" id="maxPosition" value="15" step="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Investment Policy / Process Rules</h2>
+        <label>Write your rules (one per line).</label>
+        <textarea id="policyRules" placeholder="Example:
+Rebalance when any asset class drifts >5% from target
+No single stock >10% of portfolio
+Keep cash between 3-8%
+Run stress test after any major market move
+Only add new positions that improve factor diversification"></textarea>
+        <h3>Process Adherence Since Last Review</h3>
+        <div class="grid-2">
+          <div>
+            <label>Total investment decisions made</label>
+            <input type="number" id="decisionsTotal" min="0" step="1" placeholder="e.g. 8">
+          </div>
+          <div>
+            <label>Decisions that followed the written rules above</label>
+            <input type="number" id="decisionsFollowed" min="0" step="1" placeholder="e.g. 7">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Benchmark Preferences</h2>
+        <div class="grid-2">
+          <div>
+            <label>Primary Equity Benchmark</label>
+            <select id="benchEquity">
+              <option>S&amp;P 500</option>
+              <option>MSCI World</option>
+              <option>NASDAQ 100</option>
+              <option>Russell 3000</option>
+            </select>
+          </div>
+          <div>
+            <label>Balanced Benchmark</label>
+            <select id="benchBalanced">
+              <option>60/40 Portfolio</option>
+              <option>Target Date 2040</option>
+              <option>Custom</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Stress Scenario Shocks (editable)</h2>
+        <div class="info-box">
+          These are the assumed % shocks per asset class used for the weight-based stress proxy in the report. Default figures are illustrative round numbers, not sourced from a specific study &mdash; edit them to match whatever stress study or scenario you want to test.
+        </div>
+        <table>
+          <thead><tr><th>Scenario</th><th>Equity Shock %</th><th>Fixed Income Shock %</th><th>Alternatives Shock %</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>2008 GFC-style</td>
+              <td><input type="number" id="shockGfcEq" value="-37" step="1"></td>
+              <td><input type="number" id="shockGfcFi" value="5" step="1"></td>
+              <td><input type="number" id="shockGfcAlt" value="-25" step="1"></td>
+            </tr>
+            <tr>
+              <td>2020 COVID crash</td>
+              <td><input type="number" id="shockCovidEq" value="-34" step="1"></td>
+              <td><input type="number" id="shockCovidFi" value="3" step="1"></td>
+              <td><input type="number" id="shockCovidAlt" value="-20" step="1"></td>
+            </tr>
+            <tr>
+              <td>2022 rate-rise</td>
+              <td><input type="number" id="shock22Eq" value="-20" step="1"></td>
+              <td><input type="number" id="shock22Fi" value="-15" step="1"></td>
+              <td><input type="number" id="shock22Alt" value="-10" step="1"></td>
+            </tr>
+            <tr>
+              <td><input type="text" id="shockCustomName" placeholder="Custom scenario name"></td>
+              <td><input type="number" id="shockCustomEq" step="1" placeholder="e.g. -15"></td>
+              <td><input type="number" id="shockCustomFi" step="1" placeholder="e.g. -5"></td>
+              <td><input type="number" id="shockCustomAlt" step="1" placeholder="e.g. -10"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RETURNS DATA PANEL -->
+    <div id="returns" class="panel">
+      <div class="card">
+        <h2>Periodic Return Series <span class="tag computed">drives real metrics</span></h2>
+        <div class="info-box">
+          Paste your portfolio's periodic total returns (comma or newline separated, as %, e.g. "1.2, -3.4, 2.1"). Add a matching benchmark series (same periods, same order) to unlock beta, correlation, and capture ratios. Without this data the report will not show Sharpe/Sortino/volatility/max drawdown/beta &mdash; it will say they're not computable, rather than approximate them.
+        </div>
+        <div class="grid-3">
+          <div>
+            <label>Return Frequency</label>
+            <select id="retFreq">
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+              <option value="daily">Daily</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="annual">Annual</option>
+            </select>
+          </div>
+          <div>
+            <label>Annual Risk-Free Rate (%)</label>
+            <input type="number" id="riskFreeRate" value="4.5" step="0.1">
+          </div>
+          <div></div>
+        </div>
+        <h3>Portfolio Periodic Returns (%)</h3>
+        <textarea class="mono" id="portReturns" placeholder="1.2, -3.4, 2.1, 0.5, ..."></textarea>
+        <h3>Benchmark Periodic Returns (%) &mdash; same periods, same order</h3>
+        <textarea class="mono" id="benchReturns" placeholder="1.5, -4.0, 2.5, 0.3, ..."></textarea>
+        <div class="btn-group">
+          <button class="btn" onclick="previewMetrics()">Preview Computed Metrics</button>
+        </div>
+        <div id="metricsPreview" style="margin-top:1rem"></div>
+      </div>
+    </div>
+
+    <!-- REVIEW PANEL -->
+    <div id="review" class="panel">
+      <div class="card">
+        <h2>Generate Full Review</h2>
+        <div class="info-box">
+          Produces the complete 10-section report. Every figure is either computed exactly from data you entered, or explicitly flagged as a data gap &mdash; nothing is invented.
+        </div>
+        <div class="btn-group">
+          <button class="btn" onclick="generateFullReport()">&#9654; Run Full Review</button>
+        </div>
+      </div>
+
+      <div class="card" id="reportCard" style="display:none">
+        <h2>Full Review Report</h2>
+        <div class="report" id="fullReport"></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="copyReport()">Copy Report</button>
+          <button class="btn btn-secondary" onclick="saveToHistory()">Save to History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTPRINTS PANEL -->
+    <div id="footprints" class="panel">
+      <div class="card">
+        <h2>Institutional Footprint Monitor</h2>
+        <div class="info-box">
+          Manually enter public signals when new data is released (BlackRock earnings, pension reports, etc.), always with a date and source. Each save adds a new dated entry to a running log below &mdash; nothing gets overwritten, so trends stay visible.
+        </div>
+
+        <div class="btn-group" style="margin-bottom:1rem">
+          <button class="btn" id="edgarBtn" onclick="autoFillFromEdgar()">&#8635; Auto-fill Revenue/Net Income/EPS from SEC EDGAR</button>
+          <span id="edgarStatus" class="status-bar"></span>
+        </div>
+        <h3>BlackRock / Platform Signals</h3>
+        <div class="grid-2">
+          <div>
+            <label>BlackRock AUM ($T) &mdash; manual, not in structured filings data</label>
+            <input type="number" id="fpAUM" step="0.1" placeholder="e.g. 15.3">
+          </div>
+          <div>
+            <label>Latest Quarterly Net Inflows ($B) &mdash; manual</label>
+            <input type="number" id="fpInflows" step="1" placeholder="e.g. 192">
+          </div>
+          <div>
+            <label>Total Revenue ($B) <span class="tag computed">EDGAR</span></label>
+            <input type="number" id="fpTechRev" step="0.1" placeholder="e.g. 5.3">
+          </div>
+          <div>
+            <label>Client Retention / Commentary &mdash; manual</label>
+            <input type="text" id="fpRetention" placeholder="e.g. 98% 3-yr retention">
+          </div>
+          <div>
+            <label>Net Income ($B) <span class="tag computed">EDGAR</span></label>
+            <input type="number" id="fpNetIncome" step="0.01" placeholder="auto-filled">
+          </div>
+          <div>
+            <label>Diluted EPS ($) <span class="tag computed">EDGAR</span></label>
+            <input type="number" id="fpEpsDiluted" step="0.01" placeholder="auto-filled">
+          </div>
+        </div>
+
+        <h3>Stress &amp; Behavior Signals</h3>
+        <div class="grid-2">
+          <div>
+            <label>Recent Stress Period</label>
+            <input type="text" id="fpStressPeriod" placeholder="e.g. 2022 rate rise">
+          </div>
+          <div>
+            <label>Institutional Relative Drawdown Note</label>
+            <input type="text" id="fpDrawdownNote" placeholder="e.g. Large multi-asset portfolios held up better">
+          </div>
+        </div>
+
+        <h3>Source &amp; Date (required for each entry)</h3>
+        <div class="grid-2">
+          <div>
+            <label>Source</label>
+            <input type="text" id="fpSource" placeholder="e.g. BlackRock Q2 2026 earnings release">
+          </div>
+          <div>
+            <label>Data as-of date</label>
+            <input type="date" id="fpDate">
+          </div>
+        </div>
+        <h3>Additional Notes</h3>
+        <textarea id="fpNotes" placeholder="Anything else worth logging for this entry"></textarea>
+
+        <div class="btn-group">
+          <button class="btn" id="fpSaveBtn" onclick="saveFootprintEntry()">Save New Footprint Entry</button>
+          <span id="fpSaveStatus" class="status-bar"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Footprint Log (most recent first)</h2>
+        <div id="footprintLogDisplay"><p style="color:var(--muted)">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- HISTORY PANEL -->
+    <div id="history" class="panel">
+      <div class="card">
+        <h2>Review History</h2>
+        <div id="historyList"><p style="color:var(--muted)">Loading...</p></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="exportAllData()">Export All Data (JSON)</button>
+          <button class="btn btn-secondary" onclick="clearHistory()">Clear Review History</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Session (Holdings, Targets, Rules, Returns)</h2>
+        <div class="info-box">Saves everything on this page so you don't have to retype it next time. Stored only for you, not shared.</div>
+        <div class="btn-group">
+          <button class="btn" onclick="saveSession()">Save Session</button>
+          <button class="btn btn-secondary" onclick="loadSession()">Load Saved Session</button>
+          <span id="sessionStatus" class="status-bar"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Aladdin-Style Portfolio Tracker + Institutional Footprint Monitor<br>
+    This tool provides analytical structure only &mdash; not financial advice.
+  </div>
+
+<script>
+// ========== STATE ==========
+let holdings = [];
+let history = [];
+let footprintLog = [];
+
+// ========== API CLIENT ==========
+// This site is served by the same Worker that exposes /api/*, so requests
+// are same-origin. The Worker checks Authorization: Bearer <API_TOKEN>
+// against the API_TOKEN secret you set with `wrangler secret put API_TOKEN`.
+function getApiToken() {
+  return localStorage.getItem('apiToken') || '';
+}
+function setApiToken(t) {
+  localStorage.setItem('apiToken', t);
+}
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getApiToken(),
+      ...(opts.headers || {})
+    }
+  });
+  if (res.status === 401) throw new Error('UNAUTHORIZED');
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API ${path} failed: ${res.status} ${body}`);
+  }
+  return res.json();
+}
+const apiGet = (path) => apiFetch(path);
+const apiPost = (path, body) => apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
+const apiDelete = (path) => apiFetch(path, { method: 'DELETE' });
+
+async function ensureAuthenticated() {
+  const statusEl = document.getElementById('authStatus');
+  let token = getApiToken();
+  if (!token) {
+    token = prompt('Enter your API token (the value you set with `wrangler secret put API_TOKEN`):') || '';
+    setApiToken(token);
+  }
+  try {
+    await apiGet('/api/settings'); // cheap authenticated call to verify the token works
+    statusEl.textContent = 'Connected to your live API.';
+    statusEl.style.color = 'var(--green)';
+    return true;
+  } catch (e) {
+    if (String(e.message).includes('UNAUTHORIZED')) {
+      statusEl.textContent = 'API token rejected. Click here to re-enter it.';
+      statusEl.style.cursor = 'pointer';
+      statusEl.onclick = async () => {
+        setApiToken(prompt('Enter your API token:') || '');
+        location.reload();
+      };
+    } else {
+      statusEl.textContent = 'Could not reach the API (' + e.message + '). Data will not save until this is fixed.';
+    }
+    return false;
+  }
+}
+
+// ========== TABS ==========
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'history') renderHistory();
+    if (tab.dataset.tab === 'footprints') renderFootprintLog();
+  });
+});
+
+// ========== HOLDINGS ==========
+function addHoldingRow(data = {}) {
+  const tbody = document.getElementById('holdingsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="ticker" value="${data.ticker || ''}" placeholder="AAPL"></td>
+    <td><input type="number" class="shares" value="${data.shares || ''}" placeholder="100" step="any"></td>
+    <td><input type="number" class="price" value="${data.price || ''}" placeholder="180" step="any"></td>
+    <td><input type="number" class="weight" value="${data.weight || ''}" placeholder="10" step="any"></td>
+    <td>
+      <select class="assetClass">
+        <option value="Equity" ${data.assetClass==='Equity'?'selected':''}>Equity</option>
+        <option value="Fixed Income" ${data.assetClass==='Fixed Income'?'selected':''}>Fixed Income</option>
+        <option value="Alternatives" ${data.assetClass==='Alternatives'?'selected':''}>Alternatives</option>
+        <option value="Cash" ${data.assetClass==='Cash'?'selected':''}>Cash</option>
+        <option value="Other" ${data.assetClass==='Other'?'selected':''}>Other</option>
+      </select>
+    </td>
+    <td><button class="remove-btn" onclick="this.closest('tr').remove(); updateHoldingsStatus()">&times;</button></td>
+  `;
+  tbody.appendChild(tr);
+  tr.querySelectorAll('input, select').forEach(el => el.addEventListener('input', updateHoldingsStatus));
+  updateHoldingsStatus();
+}
+
+function updateHoldingsStatus() {
+  const rows = document.querySelectorAll('#holdingsBody tr');
+  let totalWeight = 0;
+  rows.forEach(r => { totalWeight += parseFloat(r.querySelector('.weight').value) || 0; });
+  const warn = Math.abs(totalWeight - 100) > 1 && rows.length > 0 ? '  &#9888; does not sum to ~100%' : '';
+  document.getElementById('holdingsStatus').innerHTML =
+    `${rows.length} holdings &bull; Total weight: ${totalWeight.toFixed(1)}%${warn}`;
+}
+
+function clearHoldings() {
+  document.getElementById('holdingsBody').innerHTML = '';
+  updateHoldingsStatus();
+}
+
+function loadSampleHoldings() {
+  clearHoldings();
+  const sample = [
+    {ticker:'VTI', shares:120, price:280, weight:35, assetClass:'Equity'},
+    {ticker:'VXUS', shares:200, price:65, weight:15, assetClass:'Equity'},
+    {ticker:'BND', shares:300, price:72, weight:25, assetClass:'Fixed Income'},
+    {ticker:'VNQ', shares:40, price:90, weight:8, assetClass:'Alternatives'},
+    {ticker:'SGOV', shares:150, price:100, weight:12, assetClass:'Cash'},
+    {ticker:'GLD', shares:15, price:220, weight:5, assetClass:'Alternatives'}
+  ];
+  sample.forEach(s => addHoldingRow(s));
+  document.getElementById('totalValue').value = 250000;
+  document.getElementById('asOfDate').value = new Date().toISOString().slice(0,10);
+}
+
+function getHoldingsData() {
+  const rows = document.querySelectorAll('#holdingsBody tr');
+  const data = [];
+  rows.forEach(r => {
+    const ticker = r.querySelector('.ticker').value.trim().toUpperCase();
+    if (!ticker) return;
+    data.push({
+      ticker,
+      shares: parseFloat(r.querySelector('.shares').value) || 0,
+      price: parseFloat(r.querySelector('.price').value) || 0,
+      weight: parseFloat(r.querySelector('.weight').value) || 0,
+      assetClass: r.querySelector('.assetClass').value
+    });
+  });
+  return data;
+}
+
+function recalcWeights() {
+  const total = parseFloat(document.getElementById('totalValue').value) || 0;
+  if (total <= 0) return;
+  document.querySelectorAll('#holdingsBody tr').forEach(r => {
+    const shares = parseFloat(r.querySelector('.shares').value) || 0;
+    const price = parseFloat(r.querySelector('.price').value) || 0;
+    if (shares && price) {
+      r.querySelector('.weight').value = ((shares * price) / total * 100).toFixed(2);
+    }
+  });
+  updateHoldingsStatus();
+}
+
+// ========== RETURN-SERIES MATH ==========
+function parseReturnSeries(text) {
+  return text.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+    .map(s => parseFloat(s)).filter(v => !isNaN(v)).map(v => v / 100);
+}
+
+function mean(arr) { return arr.reduce((a,b) => a+b, 0) / arr.length; }
+
+function sampleStdev(arr) {
+  if (arr.length < 2) return null;
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((s,x) => s + (x-m)**2, 0) / (arr.length - 1));
+}
+
+function computeMetrics(portReturns, benchReturns, freq, rfAnnualPct) {
+  const periodsPerYear = {daily:252, weekly:52, monthly:12, quarterly:4, annual:1}[freq] || 12;
+  const n = portReturns.length;
+  if (n < 2) return null;
+  const rfAnnual = rfAnnualPct / 100;
+
+  const totalGrowth = portReturns.reduce((acc,r) => acc*(1+r), 1);
+  const annReturn = Math.pow(totalGrowth, periodsPerYear/n) - 1;
+  const periodStd = sampleStdev(portReturns);
+  const annVol = periodStd !== null ? periodStd * Math.sqrt(periodsPerYear) : null;
+  const sharpe = (annVol && annVol !== 0) ? (annReturn - rfAnnual) / annVol : null;
+
+  const rfPeriodic = Math.pow(1+rfAnnual, 1/periodsPerYear) - 1;
+  const downsideSq = portReturns.reduce((s,r) => s + Math.pow(Math.min(0, r - rfPeriodic), 2), 0) / n;
+  const downsideAnn = Math.sqrt(downsideSq) * Math.sqrt(periodsPerYear);
+  const sortino = downsideAnn !== 0 ? (annReturn - rfAnnual) / downsideAnn : null;
+
+  let peak = 1, wealth = 1, maxDD = 0;
+  portReturns.forEach(r => {
+    wealth *= (1+r);
+    if (wealth > peak) peak = wealth;
+    const dd = (wealth/peak) - 1;
+    if (dd < maxDD) maxDD = dd;
+  });
+
+  let beta = null, corr = null, upCapture = null, downCapture = null, benchAnnReturn = null;
+  const bReturns = (benchReturns && benchReturns.length === n) ? benchReturns : null;
+  if (bReturns && n > 1) {
+    const bGrowth = bReturns.reduce((acc,r) => acc*(1+r), 1);
+    benchAnnReturn = Math.pow(bGrowth, periodsPerYear/n) - 1;
+    const pm = mean(portReturns), bm = mean(bReturns);
+    let cov = 0, varB = 0, varP = 0;
+    for (let i=0; i<n; i++) {
+      cov += (portReturns[i]-pm) * (bReturns[i]-bm);
+      varB += (bReturns[i]-bm) ** 2;
+      varP += (portReturns[i]-pm) ** 2;
+    }
+    cov /= (n-1); varB /= (n-1); varP /= (n-1);
+    beta = varB !== 0 ? cov/varB : null;
+    corr = (varB !== 0 && varP !== 0) ? cov / Math.sqrt(varB*varP) : null;
+    const upIdx = [], downIdx = [];
+    bReturns.forEach((b,i) => { if (b > 0) upIdx.push(i); else if (b < 0) downIdx.push(i); });
+    if (upIdx.length) {
+      const bUp = mean(upIdx.map(i => bReturns[i]));
+      const pUp = mean(upIdx.map(i => portReturns[i]));
+      upCapture = bUp !== 0 ? (pUp/bUp)*100 : null;
+    }
+    if (downIdx.length) {
+      const bDown = mean(downIdx.map(i => bReturns[i]));
+      const pDown = mean(downIdx.map(i => portReturns[i]));
+      downCapture = bDown !== 0 ? (pDown/bDown)*100 : null;
+    }
+  }
+
+  return { n, periodsPerYear, annReturn, annVol, sharpe, sortino, maxDD, beta, corr, upCapture, downCapture, benchAnnReturn };
+}
+
+function fmtPct(v, dp=2) { return (v===null || v===undefined || isNaN(v)) ? 'n/a' : (v*100).toFixed(dp) + '%'; }
+function fmtNum(v, dp=2) { return (v===null || v===undefined || isNaN(v)) ? 'n/a' : v.toFixed(dp); }
+
+function getReturnsInputs() {
+  const port = parseReturnSeries(document.getElementById('portReturns').value);
+  const bench = parseReturnSeries(document.getElementById('benchReturns').value);
+  const freq = document.getElementById('retFreq').value;
+  const rf = parseFloat(document.getElementById('riskFreeRate').value) || 0;
+  return { port, bench, freq, rf };
+}
+
+function previewMetrics() {
+  const { port, bench, freq, rf } = getReturnsInputs();
+  const el = document.getElementById('metricsPreview');
+  if (port.length < 2) {
+    el.innerHTML = '<p style="color:var(--muted)">Enter at least 2 portfolio return periods to compute metrics.</p>';
+    return;
+  }
+  const m = computeMetrics(port, bench, freq, rf);
+  const rows = [
+    ['Periods entered', m.n],
+    ['Annualized Return', fmtPct(m.annReturn)],
+    ['Annualized Volatility', fmtPct(m.annVol)],
+    ['Sharpe Ratio', fmtNum(m.sharpe)],
+    ['Sortino Ratio', fmtNum(m.sortino)],
+    ['Max Drawdown', fmtPct(m.maxDD)],
+    ['Beta vs Benchmark', fmtNum(m.beta)],
+    ['Correlation vs Benchmark', fmtNum(m.corr)],
+    ['Upside Capture', m.upCapture !== null ? m.upCapture.toFixed(1)+'%' : 'n/a'],
+    ['Downside Capture', m.downCapture !== null ? m.downCapture.toFixed(1)+'%' : 'n/a'],
+    ['Benchmark Annualized Return', fmtPct(m.benchAnnReturn)]
+  ];
+  el.innerHTML = '<table><tbody>' + rows.map(r => `<tr><td>${r[0]}</td><td><strong>${r[1]}</strong></td></tr>`).join('') + '</tbody></table>';
+}
+
+// ========== FOOTPRINTS (running log via D1, through the Worker API) ==========
+async function loadFootprintLogFromApi() {
+  try {
+    const data = await apiGet('/api/footprints');
+    footprintLog = data.footprints || [];
+  } catch (e) {
+    footprintLog = [];
+  }
+  renderFootprintLog();
+}
+
+async function autoFillFromEdgar() {
+  const btn = document.getElementById('edgarBtn');
+  const status = document.getElementById('edgarStatus');
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span>Fetching from SEC EDGAR...';
+  try {
+    const data = await apiGet('/api/edgar/blackrock');
+    if (data.revenue) document.getElementById('fpTechRev').value = (data.revenue.value / 1e9).toFixed(2);
+    if (data.netIncome) document.getElementById('fpNetIncome').value = (data.netIncome.value / 1e9).toFixed(2);
+    if (data.epsDiluted) document.getElementById('fpEpsDiluted').value = data.epsDiluted.value;
+    const periodEnd = data.revenue?.periodEnd || data.netIncome?.periodEnd;
+    if (periodEnd && !document.getElementById('fpDate').value) document.getElementById('fpDate').value = periodEnd;
+    const cite = `${data.source} — revenue ${data.revenue?.form || ''} filed ${data.revenue?.filed || ''}, period end ${periodEnd || ''}`;
+    const srcEl = document.getElementById('fpSource');
+    if (!srcEl.value) srcEl.value = cite;
+    status.textContent = 'Filled from EDGAR. AUM/inflows/retention still need manual entry.';
+  } catch (e) {
+    status.textContent = 'EDGAR fetch failed: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+async function saveFootprintEntry() {
+  const source = document.getElementById('fpSource').value.trim();
+  const date = document.getElementById('fpDate').value;
+  if (!source || !date) {
+    alert('Please enter a source and an as-of date for this footprint entry before saving.');
+    return;
+  }
+  const btn = document.getElementById('fpSaveBtn');
+  const status = document.getElementById('fpSaveStatus');
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span>Saving...';
+
+  const entry = {
+    aum: document.getElementById('fpAUM').value || null,
+    inflows: document.getElementById('fpInflows').value || null,
+    techRev: document.getElementById('fpTechRev').value || null,
+    netIncome: document.getElementById('fpNetIncome').value || null,
+    epsDiluted: document.getElementById('fpEpsDiluted').value || null,
+    retention: document.getElementById('fpRetention').value || null,
+    stressPeriod: document.getElementById('fpStressPeriod').value || null,
+    drawdownNote: document.getElementById('fpDrawdownNote').value || null,
+    notes: document.getElementById('fpNotes').value || null,
+    source, asOfDate: date
+  };
+  try {
+    await apiPost('/api/footprints', entry);
+    status.textContent = 'Saved.';
+    await loadFootprintLogFromApi();
+  } catch (e) {
+    status.textContent = 'Save failed: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+function renderFootprintLog() {
+  const el = document.getElementById('footprintLogDisplay');
+  if (!footprintLog.length) {
+    el.innerHTML = '<p style="color:var(--muted)">No footprint entries saved yet.</p>';
+    return;
+  }
+  el.innerHTML = footprintLog.map(f => `
+    <div class="footprint-item" style="flex-direction:column;align-items:flex-start;gap:0.3rem">
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <strong>${f.as_of_date}</strong>
+        <span style="color:var(--muted);font-size:0.8rem">${f.source}</span>
+      </div>
+      <div style="font-size:0.85rem;color:var(--muted)">
+        AUM: ${f.aum ?? '—'} $T &bull; Inflows: ${f.inflows ?? '—'} $B &bull; Revenue: ${f.tech_rev ?? '—'} $B &bull;
+        Net Income: ${f.net_income ?? '—'} $B &bull; Diluted EPS: ${f.eps_diluted ?? '—'} &bull; Retention: ${f.retention || '—'}
+      </div>
+      ${f.stress_period ? `<div style="font-size:0.85rem;color:var(--muted)">Stress period: ${f.stress_period} &mdash; ${f.drawdown_note || ''}</div>` : ''}
+      ${f.notes ? `<div style="font-size:0.8rem">${f.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ========== HISTORY (review reports, via D1 through the Worker API) ==========
+async function loadHistoryFromApi() {
+  try {
+    const data = await apiGet('/api/history');
+    history = data.history || [];
+  } catch (e) {
+    history = [];
+  }
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (history.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted)">No saved reviews yet.</p>';
+    return;
+  }
+  el.innerHTML = history.map((h, i) => `
+    <div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <strong>${new Date(h.created_at).toLocaleString()}</strong>
+      <button class="btn btn-secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="viewHistoryItem(${i})">View</button>
+    </div>
+  `).join('');
+}
+
+function viewHistoryItem(i) {
+  document.getElementById('fullReport').textContent = history[i].report;
+  document.getElementById('reportCard').style.display = 'block';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="review"]').classList.add('active');
+  document.getElementById('review').classList.add('active');
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all saved review history?')) return;
+  await apiDelete('/api/history');
+  history = [];
+  renderHistory();
+}
+
+async function saveToHistory() {
+  const report = document.getElementById('fullReport').textContent;
+  if (!report) return;
+  try {
+    await apiPost('/api/history', { report: report.slice(0, 20000) });
+    await loadHistoryFromApi();
+    alert('Saved to history.');
+  } catch (e) {
+    alert('Save failed: ' + e.message);
+  }
+}
+
+function copyReport() {
+  const text = document.getElementById('fullReport').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Report copied to clipboard.'));
+}
+
+// ========== SESSION (holdings/targets/rules/returns) ==========
+function collectSessionState() {
+  return {
+    holdings: getHoldingsData(),
+    totalValue: document.getElementById('totalValue').value,
+    asOfDate: document.getElementById('asOfDate').value,
+    currency: document.getElementById('currency').value,
+    targets: {
+      equity: document.getElementById('targetEquity').value,
+      fi: document.getElementById('targetFI').value,
+      alt: document.getElementById('targetAlt').value,
+      cash: document.getElementById('targetCash').value,
+      driftBand: document.getElementById('driftBand').value,
+      maxPosition: document.getElementById('maxPosition').value
+    },
+    rules: document.getElementById('policyRules').value,
+    decisionsTotal: document.getElementById('decisionsTotal').value,
+    decisionsFollowed: document.getElementById('decisionsFollowed').value,
+    benchEquity: document.getElementById('benchEquity').value,
+    benchBalanced: document.getElementById('benchBalanced').value,
+    shocks: {
+      gfc: [document.getElementById('shockGfcEq').value, document.getElementById('shockGfcFi').value, document.getElementById('shockGfcAlt').value],
+      covid: [document.getElementById('shockCovidEq').value, document.getElementById('shockCovidFi').value, document.getElementById('shockCovidAlt').value],
+      y22: [document.getElementById('shock22Eq').value, document.getElementById('shock22Fi').value, document.getElementById('shock22Alt').value],
+      custom: [document.getElementById('shockCustomName').value, document.getElementById('shockCustomEq').value, document.getElementById('shockCustomFi').value, document.getElementById('shockCustomAlt').value]
+    },
+    returns: {
+      freq: document.getElementById('retFreq').value,
+      rf: document.getElementById('riskFreeRate').value,
+      port: document.getElementById('portReturns').value,
+      bench: document.getElementById('benchReturns').value
+    }
+  };
+}
+
+async function saveSession() {
+  const status = document.getElementById('sessionStatus');
+  status.innerHTML = '<span class="spinner"></span>Saving to your D1 database...';
+  const state = collectSessionState();
+  try {
+    await apiPost('/api/holdings', { holdings: state.holdings });
+    const { holdings, returns, ...settingsOnly } = state;
+    await apiPost('/api/settings', settingsOnly);
+    await apiPost('/api/returns?kind=portfolio', { series: parseReturnSeries(state.returns.port).map(v => v*100) });
+    await apiPost('/api/returns?kind=benchmark', { series: parseReturnSeries(state.returns.bench).map(v => v*100) });
+    status.textContent = 'Session saved to the cloud.';
+  } catch (e) {
+    status.textContent = 'Save failed: ' + e.message;
+  }
+}
+
+async function loadSession() {
+  const status = document.getElementById('sessionStatus');
+  status.innerHTML = '<span class="spinner"></span>Loading from your D1 database...';
+  try {
+    const [holdingsRes, settingsRes, portRes, benchRes] = await Promise.all([
+      apiGet('/api/holdings'), apiGet('/api/settings'),
+      apiGet('/api/returns?kind=portfolio'), apiGet('/api/returns?kind=benchmark')
+    ]);
+    const s = settingsRes.settings || {};
+    clearHoldings();
+    (holdingsRes.holdings || []).forEach(h => addHoldingRow({ ticker: h.ticker, shares: h.shares, price: h.price, weight: h.weight, assetClass: h.asset_class }));
+    document.getElementById('totalValue').value = s.totalValue || '';
+    document.getElementById('asOfDate').value = s.asOfDate || '';
+    document.getElementById('currency').value = s.currency || 'USD';
+    if (s.targets) {
+      document.getElementById('targetEquity').value = s.targets.equity ?? 60;
+      document.getElementById('targetFI').value = s.targets.fi ?? 30;
+      document.getElementById('targetAlt').value = s.targets.alt ?? 5;
+      document.getElementById('targetCash').value = s.targets.cash ?? 5;
+      document.getElementById('driftBand').value = s.targets.driftBand ?? 5;
+      document.getElementById('maxPosition').value = s.targets.maxPosition ?? 15;
+    }
+    document.getElementById('policyRules').value = s.rules || '';
+    document.getElementById('decisionsTotal').value = s.decisionsTotal || '';
+    document.getElementById('decisionsFollowed').value = s.decisionsFollowed || '';
+    document.getElementById('benchEquity').value = s.benchEquity || 'S&P 500';
+    document.getElementById('benchBalanced').value = s.benchBalanced || '60/40 Portfolio';
+    if (s.shocks) {
+      if (s.shocks.gfc) { document.getElementById('shockGfcEq').value = s.shocks.gfc[0]; document.getElementById('shockGfcFi').value = s.shocks.gfc[1]; document.getElementById('shockGfcAlt').value = s.shocks.gfc[2]; }
+      if (s.shocks.covid) { document.getElementById('shockCovidEq').value = s.shocks.covid[0]; document.getElementById('shockCovidFi').value = s.shocks.covid[1]; document.getElementById('shockCovidAlt').value = s.shocks.covid[2]; }
+      if (s.shocks.y22) { document.getElementById('shock22Eq').value = s.shocks.y22[0]; document.getElementById('shock22Fi').value = s.shocks.y22[1]; document.getElementById('shock22Alt').value = s.shocks.y22[2]; }
+      if (s.shocks.custom) { document.getElementById('shockCustomName').value = s.shocks.custom[0]; document.getElementById('shockCustomEq').value = s.shocks.custom[1]; document.getElementById('shockCustomFi').value = s.shocks.custom[2]; document.getElementById('shockCustomAlt').value = s.shocks.custom[3]; }
+    }
+    document.getElementById('retFreq').value = s.returns?.freq || 'monthly';
+    document.getElementById('riskFreeRate').value = s.returns?.rf || 4.5;
+    document.getElementById('portReturns').value = (portRes.series || []).join(', ');
+    document.getElementById('benchReturns').value = (benchRes.series || []).join(', ');
+    updateHoldingsStatus();
+    status.textContent = 'Session loaded from the cloud.';
+  } catch (e) {
+    status.textContent = 'Load failed: ' + e.message;
+  }
+}
+
+async function exportAllData() {
+  const state = collectSessionState();
+  const data = { session: state, footprintLog, history, exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `aladdin-tracker-export-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ========== LIVE PRICES (Stooq, via the Worker) ==========
+async function refreshLivePrices() {
+  const btn = document.getElementById('refreshPricesBtn');
+  const status = document.getElementById('priceRefreshStatus');
+  const rows = getHoldingsData();
+  if (!rows.length) { status.textContent = 'Add holdings first.'; return; }
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span>Fetching latest EOD prices from Stooq...';
+  try {
+    const tickers = rows.map(r => r.ticker);
+    const refreshRes = await apiPost('/api/prices/refresh', { tickers });
+    const failed = (refreshRes.results || []).filter(r => !r.ok);
+    const priceMap = {};
+    (refreshRes.results || []).filter(r => r.ok).forEach(r => { priceMap[r.ticker] = r.price; });
+    document.querySelectorAll('#holdingsBody tr').forEach(tr => {
+      const ticker = tr.querySelector('.ticker').value.trim().toUpperCase();
+      if (priceMap[ticker] !== undefined) tr.querySelector('.price').value = priceMap[ticker];
+    });
+    recalcWeights();
+    status.textContent = failed.length
+      ? `Updated ${Object.keys(priceMap).length} of ${tickers.length}. Failed: ${failed.map(f=>f.ticker).join(', ')} (check ticker/exchange - Stooq mainly covers US-listed symbols).`
+      : `Updated ${Object.keys(priceMap).length} prices from Stooq (end-of-day).`;
+  } catch (e) {
+    status.textContent = 'Price refresh failed: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+// ========== REPORT GENERATION ==========
+function generateFullReport() {
+  const holdingsData = getHoldingsData();
+  if (holdingsData.length === 0) {
+    alert('Please add at least one holding first.');
+    return;
+  }
+
+  const targets = {
+    equity: parseFloat(document.getElementById('targetEquity').value) || 60,
+    fi: parseFloat(document.getElementById('targetFI').value) || 30,
+    alt: parseFloat(document.getElementById('targetAlt').value) || 5,
+    cash: parseFloat(document.getElementById('targetCash').value) || 5,
+    driftBand: parseFloat(document.getElementById('driftBand').value) || 5,
+    maxPosition: parseFloat(document.getElementById('maxPosition').value) || 15
+  };
+
+  const rules = document.getElementById('policyRules').value.trim().split('\n').filter(r => r.trim());
+  const decisionsTotal = parseFloat(document.getElementById('decisionsTotal').value) || 0;
+  const decisionsFollowed = parseFloat(document.getElementById('decisionsFollowed').value) || 0;
+  const adherencePct = decisionsTotal > 0 ? (decisionsFollowed / decisionsTotal * 100) : null;
+
+  const totalValue = parseFloat(document.getElementById('totalValue').value) || 0;
+  const asOf = document.getElementById('asOfDate').value || new Date().toISOString().slice(0,10);
+  const benchEq = document.getElementById('benchEquity').value;
+  const benchBal = document.getElementById('benchBalanced').value;
+
+  // Aggregate by asset class
+  const byClass = {Equity:0, 'Fixed Income':0, Alternatives:0, Cash:0, Other:0};
+  let topWeights = [];
+  holdingsData.forEach(h => {
+    byClass[h.assetClass] = (byClass[h.assetClass] || 0) + h.weight;
+    topWeights.push({ticker: h.ticker, weight: h.weight});
+  });
+  topWeights.sort((a,b) => b.weight - a.weight);
+
+  const currentEquity = byClass.Equity || 0;
+  const currentFI = byClass['Fixed Income'] || 0;
+  const currentAlt = byClass.Alternatives || 0;
+  const currentCash = byClass.Cash || 0;
+  const totalWeight = currentEquity + currentFI + currentAlt + currentCash + (byClass.Other||0);
+
+  const driftEq = currentEquity - targets.equity;
+  const driftFI = currentFI - targets.fi;
+  const driftAlt = currentAlt - targets.alt;
+  const driftCash = currentCash - targets.cash;
+
+  const top5 = topWeights.slice(0,5).reduce((s,x) => s + x.weight, 0);
+  const top10 = topWeights.slice(0,10).reduce((s,x) => s + x.weight, 0);
+  const maxPos = topWeights[0] ? topWeights[0].weight : 0;
+
+  // Return-series-based metrics (real math, only if data provided)
+  const { port, bench, freq, rf } = getReturnsInputs();
+  const metrics = port.length >= 2 ? computeMetrics(port, bench, freq, rf) : null;
+
+  // Stress test: weight-based proxy using editable shocks, refined by beta if available
+  const shocks = {
+    gfc: [parseFloat(document.getElementById('shockGfcEq').value)||0, parseFloat(document.getElementById('shockGfcFi').value)||0, parseFloat(document.getElementById('shockGfcAlt').value)||0],
+    covid: [parseFloat(document.getElementById('shockCovidEq').value)||0, parseFloat(document.getElementById('shockCovidFi').value)||0, parseFloat(document.getElementById('shockCovidAlt').value)||0],
+    y22: [parseFloat(document.getElementById('shock22Eq').value)||0, parseFloat(document.getElementById('shock22Fi').value)||0, parseFloat(document.getElementById('shock22Alt').value)||0],
+  };
+  const customName = document.getElementById('shockCustomName').value.trim();
+  const customEq = parseFloat(document.getElementById('shockCustomEq').value);
+  function stressImpact(eqShock, fiShock, altShock) {
+    return (currentEquity/100)*eqShock + (currentFI/100)*fiShock + (currentAlt/100)*altShock;
+  }
+  const gfcImpact = stressImpact(...shocks.gfc);
+  const covidImpact = stressImpact(...shocks.covid);
+  const y22Impact = stressImpact(...shocks.y22);
+  let customLine = '';
+  if (customName && !isNaN(customEq)) {
+    const customFi = parseFloat(document.getElementById('shockCustomFi').value)||0;
+    const customAlt = parseFloat(document.getElementById('shockCustomAlt').value)||0;
+    const customImpact = stressImpact(customEq, customFi, customAlt);
+    customLine = `\n  ${customName} (equity ${customEq}%, FI ${customFi}%, alt ${customAlt}%):\n    Weight-based estimated impact ~ ${customImpact.toFixed(1)}%`;
+  }
+  const betaNote = (metrics && metrics.beta !== null)
+    ? `\nRegression beta to benchmark (from your return series): ${fmtNum(metrics.beta)}. A rough beta-adjusted equity-shock estimate = beta x benchmark shock; weight-based figures above do NOT yet use this beta - treat both as approximations, not a multi-factor model result.`
+    : '\nNo beta available (need matching portfolio + benchmark return series in the Returns Data tab) - stress impacts below are pure weight-based proxies only.';
+
+  const adherenceLine = adherencePct !== null
+    ? `${decisionsFollowed} of ${decisionsTotal} decisions followed written rules = ${adherencePct.toFixed(1)}%`
+    : 'Not entered - add decision counts in Targets & Rules tab to compute a real percentage.';
+
+  const weightWarning = Math.abs(totalWeight - 100) > 1
+    ? `\n&#9888; WARNING: holdings weights sum to ${totalWeight.toFixed(1)}%, not 100%. Allocation, drift, and concentration figures below will be off until this is corrected.\n`
+    : '';
+
+  let metricsBlock;
+  if (metrics) {
+    metricsBlock = `Computed from ${metrics.n} periods of entered ${freq} returns (risk-free ${rf}% annual):
+  Annualized Return:        ${fmtPct(metrics.annReturn)}
+  Annualized Volatility:    ${fmtPct(metrics.annVol)}
+  Sharpe Ratio:             ${fmtNum(metrics.sharpe)}
+  Sortino Ratio:            ${fmtNum(metrics.sortino)}
+  Max Drawdown:             ${fmtPct(metrics.maxDD)}
+  Beta vs Benchmark:        ${fmtNum(metrics.beta)}
+  Correlation vs Benchmark: ${fmtNum(metrics.corr)}
+  Upside Capture:           ${metrics.upCapture!==null ? metrics.upCapture.toFixed(1)+'%' : 'n/a (need matching benchmark series)'}
+  Downside Capture:         ${metrics.downCapture!==null ? metrics.downCapture.toFixed(1)+'%' : 'n/a (need matching benchmark series)'}
+  Benchmark Annualized Return: ${fmtPct(metrics.benchAnnReturn)}`;
+  } else {
+    metricsBlock = `NOT COMPUTABLE - no portfolio return series entered (or fewer than 2 periods).
+Go to the Returns Data tab and paste periodic returns to get real annualized
+return, volatility, Sharpe, Sortino, max drawdown, beta, and capture ratios.
+Nothing below is estimated in place of this - it is simply absent until you supply it.`;
+  }
+
+  let report = `ALADDIN-STYLE PORTFOLIO + FOOTPRINT REVIEW
+Generated: ${new Date().toLocaleString()}
+As-of Date: ${asOf}
+Total Portfolio Value: $${totalValue ? totalValue.toLocaleString() : 'Not set'}
+${weightWarning}
+===================================================================
+1. EXECUTIVE SNAPSHOT
+===================================================================
+- Holdings: ${holdingsData.length} positions
+- Equity allocation: ${currentEquity.toFixed(1)}% (target ${targets.equity}%, drift ${driftEq >= 0 ? '+' : ''}${driftEq.toFixed(1)}%)
+- Fixed Income: ${currentFI.toFixed(1)}% (target ${targets.fi}%)
+- Largest position: ${topWeights[0] ? topWeights[0].ticker + ' ' + topWeights[0].weight.toFixed(1) + '%' : 'none'}
+- Top 5 / Top 10 concentration: ${top5.toFixed(1)}% / ${top10.toFixed(1)}%
+- Process adherence: ${adherenceLine}
+- Risk metrics: ${metrics ? 'computed from entered returns (see Section 2)' : 'not computable - no return series entered'}
+
+===================================================================
+2. PERFORMANCE & RISK METRICS
+===================================================================
+${metricsBlock}
+
+Benchmarks in use: ${benchEq} | ${benchBal}
+
+===================================================================
+3. FACTOR & DIVERSIFICATION DASHBOARD
+===================================================================
+Asset Class Breakdown:
+  Equity          ${currentEquity.toFixed(1).padStart(6)}%   (target ${targets.equity}%)
+  Fixed Income    ${currentFI.toFixed(1).padStart(6)}%   (target ${targets.fi}%)
+  Alternatives    ${currentAlt.toFixed(1).padStart(6)}%   (target ${targets.alt}%)
+  Cash            ${currentCash.toFixed(1).padStart(6)}%   (target ${targets.cash}%)
+  Other           ${(byClass.Other||0).toFixed(1).padStart(6)}%
+
+Top Holdings by Weight:
+${topWeights.slice(0,10).map((h,i) => `  ${(i+1)}. ${h.ticker.padEnd(8)} ${h.weight.toFixed(1)}%`).join('\n')}
+
+Concentration Check:
+  Max single position: ${maxPos.toFixed(1)}%  (limit ${targets.maxPosition}%)
+  ${maxPos > targets.maxPosition ? 'EXCEEDS max position limit' : 'Within limit'}
+
+Factor exposures (style, size, quality, momentum, duration-by-security, credit
+quality, liquidity, inflation sensitivity) are NOT computed here - they require
+security-level holdings-based factor data (e.g. from a tool like Portfolio
+Visualizer, a fund provider's factor profile, or a paid factor model). Listed
+as a data gap in Section 8.
+Average pairwise correlation across individual holdings is likewise not
+computed - it needs a full return-series matrix per holding, not just portfolio-
+level returns. Only portfolio-vs-benchmark correlation (Section 2) is available.
+
+===================================================================
+4. STRESS TEST RESULTS
+===================================================================
+Weight-based estimated impact = (equity weight x equity shock) + (FI weight x FI shock)
++ (alt weight x alt shock), using the editable shocks from the Targets & Rules tab.
+This is a static, single-factor approximation - not a full multi-asset risk-factor
+model like an institutional platform would run.
+${betaNote}
+
+  2008 GFC-style (eq ${shocks.gfc[0]}%, FI ${shocks.gfc[1]}%, alt ${shocks.gfc[2]}%):
+    Weight-based estimated impact ~ ${gfcImpact.toFixed(1)}%
+  2020 COVID crash (eq ${shocks.covid[0]}%, FI ${shocks.covid[1]}%, alt ${shocks.covid[2]}%):
+    Weight-based estimated impact ~ ${covidImpact.toFixed(1)}%
+  2022 rate-rise (eq ${shocks.y22[0]}%, FI ${shocks.y22[1]}%, alt ${shocks.y22[2]}%):
+    Weight-based estimated impact ~ ${y22Impact.toFixed(1)}%${customLine}
+
+Recovery time is not estimated here - it depends on the path of the actual
+recovery, not just the magnitude of the shock, and is a data gap (Section 8).
+
+===================================================================
+5. ALLOCATION DRIFT & REBALANCING NOTES
+===================================================================
+Drift from Strategic Targets (band = +/-${targets.driftBand}%):
+
+  Equities:       ${driftEq >= 0 ? '+' : ''}${driftEq.toFixed(1)}%   ${Math.abs(driftEq) > targets.driftBand ? '-> REBALANCE NEEDED' : 'OK'}
+  Fixed Income:   ${driftFI >= 0 ? '+' : ''}${driftFI.toFixed(1)}%   ${Math.abs(driftFI) > targets.driftBand ? '-> REBALANCE NEEDED' : 'OK'}
+  Alternatives:   ${driftAlt >= 0 ? '+' : ''}${driftAlt.toFixed(1)}%   ${Math.abs(driftAlt) > targets.driftBand ? '-> REBALANCE NEEDED' : 'OK'}
+  Cash:           ${driftCash >= 0 ? '+' : ''}${driftCash.toFixed(1)}%   ${Math.abs(driftCash) > targets.driftBand ? '-> REBALANCE NEEDED' : 'OK'}
+
+Suggested actions:
+${Math.abs(driftEq) > targets.driftBand || Math.abs(driftFI) > targets.driftBand || Math.abs(driftAlt) > targets.driftBand || Math.abs(driftCash) > targets.driftBand
+  ? '  - Rebalance asset classes that exceed the drift band back toward targets.\n  - Prefer tax-efficient methods (new contributions, tax-loss harvesting) where possible.'
+  : '  - All major asset classes within tolerance. No immediate rebalance required.'}
+
+===================================================================
+6. PROCESS SCORECARD
+===================================================================
+Written rules on file: ${rules.length}
+${rules.length ? rules.map((r,i) => `  ${i+1}. ${r}`).join('\n') : '  (No rules entered yet - add them in Targets & Rules tab)'}
+
+Adherence this period: ${adherenceLine}
+Cash drag / tax or transaction cost drag / discretionary-override counts are
+not tracked in this version - add them as custom notes if you want them logged
+(data gap, Section 8).
+
+===================================================================
+7. ACTIONABLE RECOMMENDATIONS
+===================================================================
+1. ${Math.abs(totalWeight - 100) > 1 ? 'Fix holdings weights so they sum to ~100% before trusting any figure above.' : 'Holdings weights are internally consistent (~100%).'}
+2. ${Math.abs(driftEq) > targets.driftBand || Math.abs(driftFI) > targets.driftBand ? 'Rebalance drifted asset classes back to targets.' : 'Maintain current allocation discipline.'}
+3. ${maxPos > targets.maxPosition ? 'Reduce largest position below ' + targets.maxPosition + '%.' : 'Position sizing is within limits.'}
+4. ${metrics ? 'Keep updating the return series each period so Sharpe/Sortino/drawdown trends stay current.' : 'Add a real periodic return series in the Returns Data tab - this is the single highest-value missing input.'}
+5. Review process adherence every period using explicit decision counts, not a subjective estimate.
+
+===================================================================
+8. DATA GAPS / NEXT UPDATE NEEDED
+===================================================================
+${metrics ? '' : '- Portfolio periodic return series (needed for Sharpe/Sortino/vol/max drawdown/beta)\n'}${(metrics && metrics.beta===null) ? '- Matching benchmark return series (needed for beta/correlation/capture ratios)\n' : ''}- Security-level factor exposures (style, size, quality, momentum, duration, credit, liquidity)
+- Average pairwise correlation across individual holdings (needs a full return matrix per holding)
+- Cash drag, tax/transaction cost drag, discretionary-override tracking
+- Confirmed recovery-time estimates for each stress scenario
+- Latest institutional footprint entries with source + date (update in Footprints tab)
+
+===================================================================
+9. INSTITUTIONAL FOOTPRINT DASHBOARD
+===================================================================
+${footprintLog.length ? (() => {
+  const f = footprintLog[0];
+  return `Most recent entry (as of ${f.asOfDate}, source: ${f.source}):
+  BlackRock AUM:              ${f.aum || '-'} $T
+  Latest Net Inflows:         ${f.inflows || '-'} $B
+  Tech / Aladdin Revenue:     ${f.techRev || '-'} $B
+  Retention / Stickiness:     ${f.retention || '-'}
+  Recent Stress Period:       ${f.stressPeriod || '-'}
+  Institutional Drawdown Note:${f.drawdownNote || '-'}
+
+Log has ${footprintLog.length} entr${footprintLog.length===1?'y':'ies'} total - see Footprints tab for the full running history and trend.`;
+})() : 'No institutional footprint entries saved yet. Go to the Footprints tab and log the latest public data (BlackRock earnings, pension reports, etc.) with a source and date.'}
+
+===================================================================
+10. ALIGNMENT & ACTION NOTES
+===================================================================
+Institutional footprints (once logged over multiple periods) show whether unified
+risk management, scenario analysis, and disciplined exposure control are producing
+measurable benefits at scale (AUM growth, client stickiness, relative resilience
+in stress). A single snapshot cannot show a trend - keep adding dated entries.
+
+Compare your own metrics:
+- Drift control and process adherence are the closest personal equivalents
+  to the institutional "operating system" advantage, and both are exact numbers
+  you can track period over period in this tool.
+- If footprints show strong platform revenue growth and client retention,
+  it reinforces the value of keeping your own rules and risk view consistent.
+- If large multi-asset portfolios demonstrated better relative drawdowns during
+  a stress period, prioritize your own stress-testing and cash buffer discipline.
+
+Next concrete steps:
+1. Add a real return series in the Returns Data tab if you haven't - it unlocks
+   the largest block of currently-missing metrics.
+2. Log a new footprint entry with source + date so the institutional log has a
+   second data point and an actual trend becomes visible.
+3. Close any allocation drifts that exceed your bands.
+4. Track the next set of decisions against your written rules using explicit
+   counts, not an estimate.
+
+===================================================================
+End of Report
+`;
+
+  document.getElementById('fullReport').textContent = report;
+  document.getElementById('reportCard').style.display = 'block';
+  document.getElementById('reportCard').scrollIntoView({behavior:'smooth'});
+}
+
+// ========== INIT ==========
+document.getElementById('asOfDate').value = new Date().toISOString().slice(0,10);
+addHoldingRow();
+addHoldingRow();
+addHoldingRow();
+
+(async function init() {
+  const ok = await ensureAuthenticated();
+  if (!ok) return; // history/footprints/session stay empty until the token works
+  await loadFootprintLogFromApi();
+  await loadHistoryFromApi();
+  renderHistory();
+})();
+</script>
+</body>
+</html>

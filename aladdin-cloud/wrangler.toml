@@ -1,0 +1,32 @@
+name = "aladdin-tracker"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+# ---- Static frontend (served by this same Worker) ----
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# ---- D1 database ----
+# Create first with: wrangler d1 create aladdin-tracker-db
+# Then paste the returned database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "aladdin-tracker-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# ---- KV namespace (short-lived cache / rate-limit buffer) ----
+# Create first with: wrangler kv namespace create PRICE_KV
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "PRICE_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# ---- Scheduled price refresh ----
+# 22:00 UTC, Mon-Fri = shortly after US market close. Adjust to taste.
+[triggers]
+crons = ["0 22 * * 1-5"]
+
+# ---- Secrets (do NOT put these here — set via CLI instead) ----
+# wrangler secret put API_TOKEN
+# wrangler secret put EDGAR_USER_AGENT
