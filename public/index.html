@@ -1154,8 +1154,8 @@ async function refreshLivePrices() {
     });
     recalcWeights();
     status.textContent = failed.length
-      ? `Updated ${Object.keys(priceMap).length} of ${tickers.length}. Failed: ${failed.map(f=>f.ticker).join(', ')} (check ticker/exchange - Stooq mainly covers US-listed symbols).`
-      : `Updated ${Object.keys(priceMap).length} prices from Stooq (end-of-day).`;
+      ? `Updated ${Object.keys(priceMap).length} of ${tickers.length}. Failed: ${failed.map(f => f.ticker + ' (' + f.error + ')').join('; ')}`
+      : `Updated ${Object.keys(priceMap).length} prices refreshed.`;
   } catch (e) {
     status.textContent = 'Price refresh failed: ' + e.message;
   }

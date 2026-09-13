@@ -33,39 +33,32 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-// ---------------- Stooq price fetch ----------------
-// Stooq needs a market suffix. This assumes US-listed tickers (.us).
-// Adjust stooqSymbol() if you track non-US listings.
-function stooqSymbol(ticker) {
-  return `${ticker.toLowerCase()}.us`;
-}
-
-async function fetchStooqPrice(ticker) {
-  const sym = stooqSymbol(ticker);
-  const url = `https://stooq.com/q/l/?s=${encodeURIComponent(sym)}&f=sd2t2ohlcv&h&e=csv`;
-  const res = await fetch(url, { headers: { "User-Agent": "aladdin-tracker/1.0" } });
-  if (!res.ok) throw new Error(`Stooq HTTP ${res.status} for ${ticker}`);
-  const csv = (await res.text()).trim();
-  const lines = csv.split("\n");
-  if (lines.length < 2) throw new Error(`Stooq returned no data for ${ticker}`);
-  const cols = lines[1].split(",");
-  // header: Symbol,Date,Time,Open,High,Low,Close,Volume
-  const date = cols[1];
-  const close = parseFloat(cols[6]);
-  if (!date || isNaN(close) || date === "N/D") {
-    throw new Error(`Stooq: no valid quote for ${ticker} (symbol ${sym} may be wrong)`);
+// ---------------- Finnhub price fetch ----------------
+// Stooq's CSV endpoints started requiring a CAPTCHA-gated API key in
+// March 2026, which can't be automated — so this uses Finnhub's free
+// tier instead (plain email signup at finnhub.io, 60 calls/min limit).
+async function fetchFinnhubPrice(env, ticker) {
+  const key = env.FINNHUB_API_KEY;
+  if (!key) throw new Error("FINNHUB_API_KEY secret is not set");
+  const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(ticker)}&token=${key}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Finnhub HTTP ${res.status} for ${ticker}`);
+  const data = await res.json();
+  if (!data || typeof data.c !== "number" || data.c === 0) {
+    throw new Error(`Finnhub: no valid quote for ${ticker} (check the ticker symbol)`);
   }
-  return { price: close, asOfDate: date };
+  const asOfDate = new Date((data.t ? data.t * 1000 : Date.now())).toISOString().slice(0, 10);
+  return { price: data.c, asOfDate };
 }
 
 async function refreshPrices(env, tickers) {
   const results = [];
   for (const ticker of tickers) {
     try {
-      const { price, asOfDate } = await fetchStooqPrice(ticker);
+      const { price, asOfDate } = await fetchFinnhubPrice(env, ticker);
       await env.DB.prepare(
         `INSERT INTO price_cache (ticker, price, as_of_date, fetched_at, source)
-         VALUES (?, ?, ?, ?, 'stooq')
+         VALUES (?, ?, ?, ?, 'finnhub')
          ON CONFLICT(ticker) DO UPDATE SET price=excluded.price, as_of_date=excluded.as_of_date,
            fetched_at=excluded.fetched_at, source=excluded.source`
       ).bind(ticker, price, asOfDate, nowIso()).run();
@@ -73,8 +66,8 @@ async function refreshPrices(env, tickers) {
     } catch (e) {
       results.push({ ticker, ok: false, error: String(e.message || e) });
     }
-    // Be polite to Stooq — small delay between requests.
-    await new Promise((r) => setTimeout(r, 200));
+    // Free tier is 60 calls/minute — pace requests comfortably under that.
+    await new Promise((r) => setTimeout(r, 300));
   }
   return results;
 }
