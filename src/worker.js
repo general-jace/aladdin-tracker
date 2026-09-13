@@ -37,12 +37,17 @@ function nowIso() {
 // Stooq's CSV endpoints started requiring a CAPTCHA-gated API key in
 // March 2026, which can't be automated — so this uses Finnhub's free
 // tier instead (plain email signup at finnhub.io, 60 calls/min limit).
-async function fetchFinnhubPrice(env, ticker) {
+async function fetchFinnhubPrice(env, ticker, attempt = 0) {
   const key = env.FINNHUB_API_KEY;
   if (!key) throw new Error("FINNHUB_API_KEY secret is not set");
   const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(ticker)}&token=${key}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Finnhub HTTP ${res.status} for ${ticker}`);
+  if (res.status === 429 && attempt < 3) {
+    // Free-tier rate limit hit — back off and retry a few times before giving up.
+    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    return fetchFinnhubPrice(env, ticker, attempt + 1);
+  }
+  if (!res.ok) throw new Error(`Finnhub HTTP ${res.status} for ${ticker}${attempt > 0 ? ` (after ${attempt} retries)` : ''}`);
   const data = await res.json();
   if (!data || typeof data.c !== "number" || data.c === 0) {
     throw new Error(`Finnhub: no valid quote for ${ticker} (check the ticker symbol)`);
@@ -66,8 +71,9 @@ async function refreshPrices(env, tickers) {
     } catch (e) {
       results.push({ ticker, ok: false, error: String(e.message || e) });
     }
-    // Free tier is 60 calls/minute — pace requests comfortably under that.
-    await new Promise((r) => setTimeout(r, 300));
+    // Wider spacing than the raw 60/min average — bursts of quick requests
+    // seem to trip Finnhub's free-tier limiter even under the nominal cap.
+    await new Promise((r) => setTimeout(r, 1100));
   }
   return results;
 }
