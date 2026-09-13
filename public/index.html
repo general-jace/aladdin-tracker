@@ -310,6 +310,13 @@
         </div>
         <div class="status-bar" id="holdingsStatus">0 holdings &bull; Total weight: 0%</div>
         <div class="status-bar" id="priceRefreshStatus"></div>
+        <h3>Quick Import (paste a plan as JSON)</h3>
+        <div class="info-box">Replaces current holdings and targets with what you paste below. Review the results, then use Save Session (History &amp; Export tab) to persist to the cloud.</div>
+        <textarea class="mono" id="importJson" placeholder='{"holdings":[{"ticker":"VOO","weight":25,"assetClass":"Equity"}],"targets":{"equity":25,"fi":55,"alt":20,"cash":0}}'></textarea>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="importPlan()">Import Plan</button>
+        </div>
+        <div class="status-bar" id="importStatus"></div>
       </div>
 
       <div class="card">
@@ -773,6 +780,30 @@ function recalcWeights() {
     }
   });
   updateHoldingsStatus();
+}
+
+function importPlan() {
+  const status = document.getElementById('importStatus');
+  let plan;
+  try {
+    plan = JSON.parse(document.getElementById('importJson').value);
+  } catch (e) {
+    status.textContent = 'Import failed: invalid JSON \u2014 ' + e.message;
+    return;
+  }
+  if (Array.isArray(plan.holdings)) {
+    clearHoldings();
+    plan.holdings.forEach(h => addHoldingRow(h));
+  }
+  if (plan.targets) {
+    if (plan.targets.equity != null) document.getElementById('targetEquity').value = plan.targets.equity;
+    if (plan.targets.fi != null) document.getElementById('targetFI').value = plan.targets.fi;
+    if (plan.targets.alt != null) document.getElementById('targetAlt').value = plan.targets.alt;
+    if (plan.targets.cash != null) document.getElementById('targetCash').value = plan.targets.cash;
+  }
+  if (plan.totalValue) document.getElementById('totalValue').value = plan.totalValue;
+  updateHoldingsStatus();
+  status.textContent = 'Imported. Review the holdings and targets below, then go to History & Export \u2192 Save Session to persist this to the cloud.';
 }
 
 // ========== RETURN-SERIES MATH ==========
